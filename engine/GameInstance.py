@@ -5,6 +5,7 @@ import pygame
 from engine.AssetManager import AssetManager
 from engine.level.TileLevel import TileLevel
 from engine.level.TileLevelRenderer import TileLevelRenderer
+from engine.level.shader import shade_light
 
 
 class GameInstance():
@@ -18,7 +19,7 @@ class GameInstance():
 
         self.window_size = (int(config["resolution"] * aspect_ratio), int(config["resolution"]))
 
-        self.screen = pygame.display.set_mode(self.window_size)
+        self.screen = pygame.display.set_mode(self.window_size, pygame.DOUBLEBUF | pygame.HWSURFACE, 32)
         pygame.display.set_caption(config["name"])
 
         self.max_fps = config["max_fps"]
@@ -29,7 +30,7 @@ class GameInstance():
 
         self.mouse = {"left": False,
                       "right": False,
-                      "pos": []
+                      "pos": [0,0]
                       }
 
         self.asset_manager = AssetManager("game")
@@ -40,7 +41,7 @@ class GameInstance():
 
         self.level_renderer.prepare_level(self.level)
 
-        self.zoom = 1
+        self.zoom = 4
         self.viewport = [0, 0, self.window_size[0] / self.zoom, self.window_size[1] / self.zoom]
 
         self.keys = pygame.key.get_pressed()
@@ -79,7 +80,9 @@ class GameInstance():
         self.screen.fill((20, 20, 40))
 
         l = self.level_renderer.render(self.viewport)
+        shade_light(l, [i / self.zoom for i in self.mouse["pos"]])
         l = pygame.transform.scale(l, self.window_size)
+
         self.screen.blit(l, (0, 0))
 
         text = self.font.render("{} fps".format(int(self.frame_clock.get_fps())), True, (255, 255, 255))

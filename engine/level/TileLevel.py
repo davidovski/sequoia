@@ -16,7 +16,7 @@ class TileLevel(Level):
         # debug population
         for x in range(self.width):
             for y in range(self.height):
-                e = random.randint(0, 3)
+                e = random.randint(0, 2)
                 if e == 0:
                     self.set_tile(x, y, Tile("game.tiles.metal"))
                 elif e == 1:
