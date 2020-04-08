@@ -15,15 +15,14 @@ class EntityInputs:
 
 
 class Entity(MultiCollidable):
-    def __init__(self, x, y):
+    def __init__(self, name, x, y, width, height):
         super().__init__(x, y)
         self.x = x
         self.y = y
-        self.width = 16
-        self.height = 16
-
-        # DEBUG collision
-        self.add_collision(Rect(0, 0, self.width, self.height))
+        self.width = width
+        self.height = height
+        self.name = name
+        self.animation_frame = 0
 
     def set_pos(self, x, y):
         self.x = x
@@ -37,9 +36,20 @@ class Entity(MultiCollidable):
         self.tick(game)
 
     def get_image(self, asset_manager: AssetManager):
-        pass
+        data = asset_manager.get_data(self.name)
+        img = asset_manager.get(self.name)
+
+        if not data == {} and "animation" in data:
+            a = int(self.animation_frame) % len(data["animation"])
+            frame = data["animation"][a]
+
+            return asset_manager.get_section(self.name, frame)
+
+        else:
+            return img
 
     def tick(self, game):
+        self.animation_frame += 1
         pass
 
     def render(self, asset_manager: AssetManager, offset, scale):
@@ -47,12 +57,23 @@ class Entity(MultiCollidable):
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
 
-        t.blit((self.x - offset[0]) * scale, (self.y - offset[1]) * scale, 0, width=self.width * scale, height=self.height * scale)
+        t.blit((self.x - offset[0]) * scale, (self.y - offset[1]) * scale, 0, width=t.width * scale, height=t.height * scale)
+
+    def calculate_collisions(self, asset_manager):
+        if len(self.collisions) == 0:
+            data = asset_manager.get_data(self.name)
+            if "collisions" in data:
+                for col in data["collisions"]:
+                    self.add_collision(Rect(col[0], col[1], col[2], col[3]))
+            else:
+                self.add_collision(Rect(0, 0, self.width, self.height))
+
+            print(f"calcuated {len(self.collisions)} collisions for {self.name}")
 
 
 class WorldEntity(Entity):
-    def __init__(self, x, y):
-        super().__init__(x, y)
+    def __init__(self, name, x, y, width, height):
+        super().__init__(name, x, y, width, height)
         self.velocity = Vector(0, 0)
         self.on_ground = False
 
@@ -67,18 +88,20 @@ class WorldEntity(Entity):
                 if not nc.is_colliding(game.level):
                     self.move(v, 0)
                 else:
-                    bumped = False
-                    for h in range(9):
-                        nc = self.adjust_pos(v, h)
-                        if not nc.is_colliding(game.level):
-                            self.move(v, h)
-                            bumped = True
-                            break
+                    if self.on_ground:
+                        bumped = False
+                        for h in range(9):
+                            nc = self.adjust_pos(v, h)
+                            if not nc.is_colliding(game.level):
+                                self.move(v, h)
+                                bumped = True
+                                break
 
-                    if not bumped:
+                        if not bumped:
+                            self.velocity.x = 0
+                    else:
                         self.velocity.x = 0
-                        break
-
+                    break
 
         if not self.velocity.y == 0:
             nc = self.adjust_pos(0, self.velocity.y)
@@ -101,3 +124,5 @@ class WorldEntity(Entity):
                 self.velocity.x = 0
 
         self.velocity.y -= game.level.gravity
+
+

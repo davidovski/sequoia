@@ -29,8 +29,10 @@ class GameInstance():
             self.window.set_fullscreen(True)
 
         self.max_fps = int(config["max_fps"])
-
+        self.tps = self.max_fps
         pyglet.clock.schedule_interval(self.update, 1.0 / self.max_fps)
+        pyglet.clock.schedule_interval(self.render, 1.0 / self.max_fps)
+
         self.fps = pyglet.window.FPSDisplay(self.window)
 
         gl.glEnable(gl.GL_BLEND)
@@ -62,27 +64,31 @@ class GameInstance():
 
         self.entities.append(PlayerEntity(32, 32))
 
+        self.a = 0
+
     def run(self):
         self.running = True
+
+        for e in self.entities:
+            e.calculate_collisions(self.asset_manager)
         pyglet.app.run()
 
     def update(self, dt):
-        gl.glEnable(gl.GL_BLEND)
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
-
+        self.a += 1
+        self.tps = (self.tps + (dt**-1)) / 2
         for e in self.entities:
             e.update(self)
-
-        self.render()
 
         self.tick()
         self.last_keys = self.keys
 
         self.viewport = [self.viewport[0], self.viewport[1], int(self.window_size[0] / self.zoom), int(self.window_size[1] / self.zoom)]
 
-    def render(self):
+    def render(self, dt):
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
 
         self.window.clear()
         gl.glClearColor(0.5, 0.6, 0.7, 1.0)
@@ -91,8 +97,11 @@ class GameInstance():
         level_image.blit(0, 0, width=self.window_size[0], height=self.window_size[1])
 
         for e in self.entities:
-
             e.render(self.asset_manager, self.viewport, self.zoom)
+
+        text = f"tps={round(self.tps)} x={round(self.entities[0].velocity.x, 2)} y={round(self.entities[0].velocity.y, 2)}"
+        label = pyglet.text.Label(text, font_size=36, x=8, y=self.window.height - (36 + 8))
+        label.draw()
 
         self.fps.draw()
 

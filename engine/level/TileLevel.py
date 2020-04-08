@@ -46,14 +46,20 @@ class TileLevel(Level):
         # Iterating through tiles
         # OPTIMiSE: only iterate through tiles near target rect
 
-        for x in range(self.width):
-            for y in range(self.height):
+        minx = math.floor(target.x / self.tilesize)
+        miny = math.floor(target.y / self.tilesize)
+
+        maxx = math.ceil((target.x + target.width) / self.tilesize)
+        maxy = math.ceil((target.y + target.height) / self.tilesize)
+
+        for x in range(minx, maxx):
+            for y in range(miny, maxy):
                 t = self.get_tile(x, y)
                 if t is not None:
 
-                    if abs(target.x - x*self.tilesize) < 16 and abs(target.y - y*self.tilesize) < 64:
+                    if abs(target.x - x * self.tilesize) < 16 and abs(target.y - y * self.tilesize) < 16:
                         for c in t.collisions:
-                            if c.adjust_pos(x*self.tilesize, y*self.tilesize).is_colliding(target):
+                            if c.adjust_pos(x * self.tilesize, y * self.tilesize).is_colliding(target):
                                 return True
 
 

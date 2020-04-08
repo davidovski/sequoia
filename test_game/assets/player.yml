@@ -1,0 +1,40 @@
+collisions:
+  - [4, 0, 4, 13]
+  - [0, 14, 11, 13]
+animation:
+  # Standing Left
+  - section: [2, 1, 13, 26]
+    flip: h
+
+  # Standing Right
+  - section: [2, 1, 11, 26]
+    flip: x
+
+  # Crouching Left
+  - section: [18, 16, 13, 16]
+    flip: h
+
+  # Crouching Right
+  - section: [18, 16, 11, 16]
+    flip: x
+
+
+  # Walking Right
+  - section: [2, 33, 11, 26]
+    flip: x
+  - section: [18, 33, 11, 26]
+    flip: x
+  - section: [34, 33, 11, 26]
+    flip: x
+  - section: [50, 33, 11, 26]
+    flip: x
+
+  # Walking Left
+  - section: [2, 33, 13, 26]
+    flip: h
+  - section: [18, 33, 13, 26]
+    flip: h
+  - section: [34, 33, 13, 26]
+    flip: h
+  - section: [50, 33, 13, 26]
+    flip: h
