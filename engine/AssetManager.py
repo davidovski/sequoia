@@ -1,3 +1,5 @@
+from random import randint
+
 import pyglet
 import os
 
@@ -7,14 +9,20 @@ class AssetManager:
         self.table = {}
         self.name = name
 
+        self.missing_texture = pyglet.image.ImageData(16, 16, 'RGB', bytes([randint(0, 255) for i in range(16*16*3)]))
+
     def load_image(self, namespace, path):
         if not namespace in self.table:
-            self.table[namespace] = pyglet.image.load(path)
+            img = pyglet.image.load(path)
+            self.table[namespace] = img
 
         return self.table[namespace]
 
     def get(self, namespace):
-        return self.table[namespace]
+        if namespace in self.table:
+            return self.table[namespace]
+        else:
+            return self.missing_texture
 
     def load_pack(self, path):
         self.load_space(self.name, path)

@@ -2,7 +2,8 @@ name: "game"
 
 resolution: 720
 aspect_ratio: "16:9"
-max_fps: 60
+max_fps: 120
 mode: "windowed"
 
 asset_pack: "assets"
+start: "level.yml"

@@ -1,19 +1,23 @@
+import math
 import os
 from zipfile import ZipFile
 
 import yaml
 
+from engine.collisions import Collidable
 from engine.level.Level import Level
-from engine.level.Tile import Tile
+from engine.level.tiles.Tile import Tile
 
 
 class TileLevel(Level):
     def __init__(self):
-
+        super().__init__()
         self.width = 400
         self.height = 40
-        self.tilesize = 64
+        self.tilesize = 16
         self.tiles = [[None for o in range(self.height)] for i in range(self.width)]
+
+        self.gravity = 1
 
         # debug population
         # for x in range(self.width):
@@ -24,16 +28,75 @@ class TileLevel(Level):
         #         elif e == 1:
         #             self.set_tile(x, y, Tile("game.tiles.brick"))
 
+        for x in range(self.width):
+            for y in range(self.height):
+                t = self.get_tile(x, y)
+                if t is not None:
+                    for c in t.collisions:
+                        self.add_collision(c.adjust_pos(x * self.tilesize, y * self.tilesize))
+
     def set_tile(self, x, y, tile):
+
         self.tiles[x][y] = tile
 
     def get_tile(self, x, y):
         return self.tiles[x][y]
 
+    def is_colliding(self, target):
+        # Iterating through tiles
+        # OPTIMiSE: only iterate through tiles near target rect
 
-class TileLevelLoader:
-    def load(self, file):
-        mapyml = {}
+        for x in range(self.width):
+            for y in range(self.height):
+                t = self.get_tile(x, y)
+                if t is not None:
+
+                    if abs(target.x - x*self.tilesize) < 16 and abs(target.y - y*self.tilesize) < 64:
+                        for c in t.collisions:
+                            if c.adjust_pos(x*self.tilesize, y*self.tilesize).is_colliding(target):
+                                return True
+
+
+def create_level_instance(map_data):
+    tile_size = map_data["properties"]["tile_size"]
+    w = map_data["properties"]["width"]
+    h = map_data["properties"]["height"]
+    tiles_list = map_data["tile_table"]
+    tiles = {}
+
+    for t in tiles_list:
+        name = t["name"]
+        collisions = t["collisions"]
+        t = Tile(name)
+        t.set_collisions(collisions)
+        tiles[name] = t
+
+    level = TileLevel()
+
+    level.width = w
+    level.height = h
+    level.tilesize = tile_size
+
+    for i in range(len(map_data["map"])):
+        x = math.floor(i / h)
+        y = i - (x * h)
+        n = map_data["map"][i]
+        if n == "":
+            t = None
+        else:
+            t = tiles[n]
+
+        level.set_tile(x, y, t)
+
+    return level
+
+
+def load_map_file(file):
+    mapyml = {}
+    if not os.path.exists(file):
+        print("file not found, creating empty map")
+        return TileLevel()
+    else:
         if file.endswith(".zip"):
             print("Loading compressed map...")
             with ZipFile(file, 'r') as zipObj:
@@ -42,11 +105,11 @@ class TileLevelLoader:
                     if fileName.endswith('.yml'):
                         zipObj.extract(fileName, 'temp')
                         print("Extracted map")
-                        with open("temp/"+fileName) as f:
+                        with open("temp/" + fileName) as f:
                             mapyml = yaml.load(f, Loader=yaml.FullLoader)
 
                         print("Cleaning up...")
-                        os.remove("temp/"+fileName)
+                        os.remove("temp/" + fileName)
                         os.rmdir("temp")
 
         elif file.endswith(".yml"):
@@ -57,30 +120,4 @@ class TileLevelLoader:
         else:
             print("Invalid map!")
 
-        self.create_instance(mapyml)
-
-    def create_instance(self, map_data):
-
-        w = map_data["properties"]["width"]
-        h = map_data["properties"]["height"]
-        tiles_list = map_data["tile_table"]
-        tiles = {}
-
-        for t in tiles_list:
-            name = t["name"]
-            collisions = t["collisions"]
-            tile = Tile(name)
-            tile.set_collisions(collisions)
-
-            tiles[name] = tile
-
-
-        level = TileLevel()
-
-        level.width = w
-        level.height = h
-
-        for i in range(len(map_data["map"])):
-            x, y = i*w, i*w + i
-            t = tiles[map_data["map"][i]]
-            level.set_tile(x, y, t)
+    return create_level_instance(mapyml)

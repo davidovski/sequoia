@@ -1,8 +1,6 @@
 import pyglet
-from pyglet import gl
 
 from engine.level.Level import Level
-from engine.level.TileLevel import TileLevel
 
 
 class TileLevelRenderer:
@@ -25,9 +23,9 @@ class TileLevelRenderer:
                     t = self.game.asset_manager.get(tile.image)
                     self.image.blit_into(t, x, y, 0)
 
-    def render(self):
-        self.image.blit(0, 0)
-
+                    # for col in tile.collisions:
+                    #     if isinstance(col, Rect):
+                    #         self.image.blit_into(self.game.asset_manager.missing_texture, x, y, 0)
     # def prepare_level(self, level):
     #     if isinstance(level, TileLevel):
     #         self.current_level = level

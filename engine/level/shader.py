@@ -43,7 +43,5 @@ def shade(image):
 
     new = bytes(new)
     rawimage.set_data(format, pitch, new)
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
 
     return rawimage
