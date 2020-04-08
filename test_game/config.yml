@@ -1,7 +1,8 @@
 name: "game"
 
-resolution: 480
+resolution: 720
 aspect_ratio: "16:9"
 max_fps: 60
+mode: "windowed"
 
 asset_pack: "assets"

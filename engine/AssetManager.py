@@ -1,4 +1,4 @@
-import pygame
+import pyglet
 import os
 
 
@@ -9,7 +9,7 @@ class AssetManager:
 
     def load_image(self, namespace, path):
         if not namespace in self.table:
-            self.table[namespace] = pygame.image.load(path)
+            self.table[namespace] = pyglet.image.load(path)
 
         return self.table[namespace]
 

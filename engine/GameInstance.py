@@ -1,30 +1,41 @@
 import sys
 
-import pygame
+import pyglet
+from pyglet import gl
 
 from engine.AssetManager import AssetManager
+from engine.level import shader
 from engine.level.TileLevel import TileLevel
 from engine.level.TileLevelRenderer import TileLevelRenderer
-from engine.level.shader import shade_light
 
 
 class GameInstance():
     def __init__(self, config):
         self.config = config
 
-        pygame.init()
 
         split = config["aspect_ratio"].split(":")
         aspect_ratio = float(split[0]) / float(split[1])
 
         self.window_size = (int(config["resolution"] * aspect_ratio), int(config["resolution"]))
 
-        self.screen = pygame.display.set_mode(self.window_size, pygame.DOUBLEBUF | pygame.HWSURFACE, 32)
-        pygame.display.set_caption(config["name"])
+        r = self.config["mode"] == "fullscreen_windowed"
 
-        self.max_fps = config["max_fps"]
+        self.window = pyglet.window.Window(width=self.window_size[0], height=self.window_size[1], caption=config["name"],  visible=True, resizable=r)
+        if r:
+            self.window.on_resize = self.on_resize
 
-        self.frame_clock = pygame.time.Clock()
+        if self.config["mode"] == "fullscreen":
+            self.window.set_fullscreen(True)
+
+        self.max_fps = int(config["max_fps"])
+
+        pyglet.clock.schedule_interval(self.update, 1.0 / self.max_fps)
+        self.fps = pyglet.window.FPSDisplay(self.window)
+
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
 
         self.running = False
 
@@ -35,6 +46,7 @@ class GameInstance():
 
         self.asset_manager = AssetManager("game")
         self.asset_manager.load_pack(config["asset_pack"])
+        print(self.asset_manager.table)
 
         self.level_renderer = TileLevelRenderer(self)
         self.level = TileLevel("file")
@@ -44,68 +56,58 @@ class GameInstance():
         self.zoom = 4
         self.viewport = [0, 0, self.window_size[0] / self.zoom, self.window_size[1] / self.zoom]
 
-        self.keys = pygame.key.get_pressed()
-        self.last_keys = pygame.key.get_pressed()
-        self.font = pygame.font.SysFont(None, 24)
+        self.keys = pyglet.window.key.KeyStateHandler()
+        self.last_keys = self.keys
+        self.window.push_handlers(self.keys)
 
     def run(self):
         self.running = True
+        pyglet.app.run()
 
-        while self.running:
-            self.tick()
+    def update(self, dt):
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
 
-            self.render()
-            self.frame_clock.tick(self.max_fps)
+        self.tick()
 
-            self.event_handler()
-            self.input_handler()
-
-    def event_handler(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-    def input_handler(self):
-        m = pygame.mouse.get_pressed()
-        self.last_keys = self.keys
-        self.keys = pygame.key.get_pressed()
-        self.mouse = {
-            "left": m[0],
-            "right": m[1],
-            "pos": pygame.mouse.get_pos()
-                    }
+        self.render()
 
     def render(self):
-        self.screen.fill((20, 20, 40))
+        self.window.clear()
+        level_image = self.level_renderer.render(self.viewport)
+        level_image.blit(0, 0, width=self.window_size[0], height=self.window_size[1])
 
-        l = self.level_renderer.render(self.viewport)
-        shade_light(l, [i / self.zoom for i in self.mouse["pos"]])
-        l = pygame.transform.scale(l, self.window_size)
-
-        self.screen.blit(l, (0, 0))
-
-        text = self.font.render("{} fps".format(int(self.frame_clock.get_fps())), True, (255, 255, 255))
-        self.screen.blit(text, (20, 20))
-
-        pygame.display.flip()
+        self.fps.draw()
 
     def tick(self):
         v = 4
-        if self.keys[pygame.K_LEFT]:
-            self.viewport[0] -= v
-        if self.keys[pygame.K_RIGHT]:
-            self.viewport[0] += v
-        if self.keys[pygame.K_DOWN]:
-            self.viewport[1] += v
-        if self.keys[pygame.K_UP]:
-            self.viewport[1] -= v
 
-        if self.keys[pygame.K_EQUALS]:
+        if self.keys[pyglet.window.key.LEFT]:
+            self.viewport[0] -= v
+        if self.keys[pyglet.window.key.RIGHT]:
+            self.viewport[0] += v
+        if self.keys[pyglet.window.key.DOWN]:
+            self.viewport[1] -= v
+        if self.keys[pyglet.window.key.UP]:
+            self.viewport[1] += v
+
+        if self.keys[pyglet.window.key.EQUAL]:
             self.zoom *= 1.2
-        if self.keys[pygame.K_MINUS]:
+        if self.keys[pyglet.window.key.MINUS]:
             self.zoom /= 1.2
 
-        self.viewport = [self.viewport[0], self.viewport[1], self.window_size[0] / self.zoom, self.window_size[1] / self.zoom]
+        if self.keys[pyglet.window.key.F]:
+            self.window.set_fullscreen(True)
+        if self.keys[pyglet.window.key.G]:
+            self.window.set_fullscreen(False)
 
+        self.viewport = [self.viewport[0], self.viewport[1], int(self.window_size[0] / self.zoom), int(self.window_size[1] / self.zoom)]
+        self.last_keys = self.keys
         pass
+
+    def on_resize(self, width, height):
+        gl.glViewport(0, 0, width, height)
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        self.window_size = [width, height]
