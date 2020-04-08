@@ -19,6 +19,8 @@ class AssetManager:
     def load_pack(self, path):
         self.load_space(self.name, path)
 
+        print(f"Loaded {len(self.table)} assets from {path}")
+
     def load_space(self, parentnamespace, path):
 
         for f in os.listdir(path):
@@ -26,7 +28,7 @@ class AssetManager:
 
             if os.path.isdir(d):
                 # print("loading space {}".format(d.split("/")[-1]))
-                self.load_space(parentnamespace + "." + d.split("/")[-1], d)
+                self.load_space(f"{parentnamespace}.{d.split('/')[-1]}", d)
 
             else:
 

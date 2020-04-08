@@ -46,7 +46,6 @@ class GameInstance():
 
         self.asset_manager = AssetManager("game")
         self.asset_manager.load_pack(config["asset_pack"])
-        print(self.asset_manager.table)
 
         self.level_renderer = TileLevelRenderer(self)
         self.level = TileLevel("file")
