@@ -5,14 +5,17 @@ import os
 
 import yaml
 
+from engine import shaders
+
 
 class AssetManager:
     def __init__(self, name):
         self.table = {}
         self.transformations = {}
         self.name = name
-
+        self.shader_files = {}
         self.missing_texture = pyglet.image.ImageData(16, 16, 'RGB', bytes([randint(0, 255) for i in range(16 * 16 * 3)]))
+        self.shaders = {}
 
     def load_image(self, namespace, path):
         if not namespace in self.table:
@@ -63,8 +66,22 @@ class AssetManager:
 
     def load_pack(self, path):
         self.load_space(self.name, path)
-        print(self.table)
-        print(f"Loaded {len(self.table)} assets from {path}")
+        print(f"Loaded {len(self.table)} assets from \"{path}\"")
+
+    def create_shader(self, name):
+        vs = name + ".vs"
+        fs = name + ".fs"
+        if vs in self.shader_files and fs in self.shader_files:
+            vert_shader = bytes(self.shader_files[vs], "UTF-8")
+            frag_shader = bytes(self.shader_files[fs], "UTF-8")
+
+            self.shaders[name] = shaders.from_string(vert_shader, frag_shader)
+
+    def get_shader(self, name):
+        if name in self.shaders:
+            return self.shaders[name]
+        else:
+            return None
 
     def load_space(self, parent_name_space, path):
 
@@ -76,13 +93,17 @@ class AssetManager:
                 self.load_space(f"{parent_name_space}.{d.split('/')[-1]}", d)
 
             else:
-
+                name = ".".join(f.split("/")[-1].split(".")[:-1])
                 if f.endswith(".png"):
-                    name = ".".join(f.split("/")[-1].split(".")[:-1])
                     self.load_image(parent_name_space + "." + name, d)
                 if f.endswith(".yml"):
-                    name = ".".join(f.split("/")[-1].split(".")[:-1]) + ".data"
+                    name += ".data"
                     self.load_data(parent_name_space + "." + name, d)
+
+                if f.endswith(".fs") or f.endswith(".vs"):
+                    with open(d, "r") as s:
+                        self.shader_files[name + (".fs" if f.endswith(".fs") else ".vs")] = s.read()
+                    self.create_shader(name)
 
 
 if __name__ == "__main__":

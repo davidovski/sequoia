@@ -22,8 +22,9 @@ class GameInstance():
         r = self.config["mode"] == "fullscreen_windowed"
 
         self.window = pyglet.window.Window(width=self.window_size[0], height=self.window_size[1], caption=config["name"], visible=True, resizable=r)
-        if r:
-            self.window.on_resize = self.on_resize
+        self.window.on_resize = self.on_resize
+        # if r:
+        #     self.window.on_resize = self.on_resize
 
         if self.config["mode"] == "fullscreen":
             self.window.set_fullscreen(True)
@@ -64,6 +65,8 @@ class GameInstance():
 
         self.entities.append(PlayerEntity(32, 32))
 
+        self.shader = self.asset_manager.get_shader("test")
+
         self.a = 0
 
     def run(self):
@@ -71,11 +74,14 @@ class GameInstance():
 
         for e in self.entities:
             e.calculate_collisions(self.asset_manager)
+
+        self.shader.use()
+
         pyglet.app.run()
 
     def update(self, dt):
         self.a += 1
-        self.tps = (self.tps + (dt**-1)) / 2
+        self.tps = (self.tps + (dt ** -1)) / 2
         for e in self.entities:
             e.update(self)
 
@@ -85,23 +91,44 @@ class GameInstance():
         self.viewport = [self.viewport[0], self.viewport[1], int(self.window_size[0] / self.zoom), int(self.window_size[1] / self.zoom)]
 
     def render(self, dt):
+
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
 
-        self.window.clear()
         gl.glClearColor(0.5, 0.6, 0.7, 1.0)
+        self.window.clear()
 
-        level_image = self.level_renderer.render(self.viewport)
-        level_image.blit(0, 0, width=self.window_size[0], height=self.window_size[1])
+        width, height = self.window_size
 
-        for e in self.entities:
-            e.render(self.asset_manager, self.viewport, self.zoom)
+        size = 10
 
-        text = f"tps={round(self.tps)} x={round(self.entities[0].velocity.x, 2)} y={round(self.entities[0].velocity.y, 2)}"
-        label = pyglet.text.Label(text, font_size=36, x=8, y=self.window.height - (36 + 8))
-        label.draw()
+        gl.glColor3ub(127, 0, 0)
+        gl.glBegin(gl.GL_QUADS)
+        # gl.glVertex2f(-size, -size)
+        # gl.glVertex2f(size, -size)
+        # gl.glVertex2f(size, size)
+        # gl.glVertex2f(-size, size)
+        # gl.glVertex2f(0, 0)
+        # gl.glVertex2f(self.window_size[1], 0)
+        # gl.glVertex2f(self.window_size[0], self.window_size[1])
+        # gl.glVertex2f(0, self.window_size[1])
+        gl.glVertex2f(-width / 2, -height / 2)
+        gl.glVertex2f(width / 2, -height / 2)
+        gl.glVertex2f(width / 2, height /2)
+        gl.glVertex2f(-width / 2, height / 2)
+        gl.glEnd()
+
+        # level_image = self.level_renderer.render(self.viewport)
+        # level_image.blit(0, 0, width=self.window_size[0], height=self.window_size[1])
+        #
+        # for e in self.entities:
+        #     e.render(self.asset_manager, self.viewport, self.zoom)
+        #
+        # text = f"tps={round(self.tps)} x={round(self.entities[0].velocity.x, 2)} y={round(self.entities[0].velocity.y, 2)}"
+        # label = pyglet.text.Label(text, font_size=36, x=8, y=self.window.height - (36 + 8))
+        # label.draw()
 
         self.fps.draw()
 
@@ -127,6 +154,11 @@ class GameInstance():
     def on_resize(self, width, height):
         gl.glViewport(0, 0, width, height)
         gl.glMatrixMode(gl.GL_PROJECTION)
+
         gl.glLoadIdentity()
+        gl.glOrtho(-width / 2, width / 2, -height / 2, height / 2, -1, 1)
+        # gl.glOrtho(0, width, 0, height, 0, 1)
         gl.glMatrixMode(gl.GL_MODELVIEW)
+
         self.window_size = [width, height]
+

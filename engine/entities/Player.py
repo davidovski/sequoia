@@ -42,7 +42,7 @@ class PlayerEntity(WorldEntity):
             self.collisions[1].y = 14
             self.height = 24
 
-        v = 3 if sprint and not self.crouching else 1
+        v = 2 if sprint and not self.crouching else 1
         if up:
             v *= 1.2
 
